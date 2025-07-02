@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crazy 3D Dice</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+      font-family: sans-serif;
+      overflow: hidden;
+      padding: 20px 0;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+
+    .dice-container {
+      display: flex;
+      gap: 40px;
+      position: relative;
+      flex-grow: 1;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dice {
+      width: 100px;
+      height: 100px;
+      transform-style: preserve-3d;
+      position: relative;
+    }
+
+    .face {
+      width: 100px;
+      height: 100px;
+      position: absolute;
+      background-color: #fff;
+      border: 2px solid #000;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .front  { transform: translateZ(50px); }
+    .back   { transform: rotateY(180deg) translateZ(50px); }
+    .right  { transform: rotateY(90deg) translateZ(50px); }
+    .left   { transform: rotateY(-90deg) translateZ(50px); }
+    .top    { transform: rotateX(90deg) translateZ(50px); }
+    .bottom { transform: rotateX(-90deg) translateZ(50px); }
+
+    .dot {
+      width: 20px;
+      height: 20px;
+      background-color: black;
+      border-radius: 50%;
+      position: absolute;
+    }
+
+    .center { top: 40%; left: 40%; }
+    .top-left { top: 15%; left: 15%; }
+    .top-right { top: 15%; right: 15%; }
+    .bottom-left { bottom: 15%; left: 15%; }
+    .bottom-right { bottom: 15%; right: 15%; }
+    .middle-left { top: 40%; left: 15%; }
+    .middle-right { top: 40%; right: 15%; }
+
+    #result {
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+      visibility: hidden;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <button id="roll-btn">Roll Dice</button>
+  <div id="result"></div>
+
+  <div class="dice-container">
+    <div class="dice" id="dice1">
+      <div class="face front"><span class="dot center"></span></div>
+      <div class="face back"><span class="dot top-left"></span><span class="dot bottom-right"></span></div>
+      <div class="face right"><span class="dot top-left"></span><span class="dot center"></span><span class="dot bottom-right"></span></div>
+      <div class="face left"><span class="dot top-left"></span><span class="dot top-right"></span><span class="dot bottom-left"></span><span class="dot bottom-right"></span></div>
+      <div class="face top"><span class="dot top-left"></span><span class="dot top-right"></span><span class="dot center"></span><span class="dot bottom-left"></span><span class="dot bottom-right"></span></div>
+      <div class="face bottom"><span class="dot top-left"></span><span class="dot top-right"></span><span class="dot middle-left"></span><span class="dot middle-right"></span><span class="dot bottom-left"></span><span class="dot bottom-right"></span></div>
+    </div>
+    <div class="dice" id="dice2">
+      <div class="face front"><span class="dot center"></span></div>
+      <div class="face back"><span class="dot top-left"></span><span class="dot bottom-right"></span></div>
+      <div class="face right"><span class="dot top-left"></span><span class="dot center"></span><span class="dot bottom-right"></span></div>
+      <div class="face left"><span class="dot top-left"></span><span class="dot top-right"></span><span class="dot bottom-left"></span><span class="dot bottom-right"></span></div>
+      <div class="face top"><span class="dot top-left"></span><span class="dot top-right"></span><span class="dot center"></span><span class="dot bottom-left"></span><span class="dot bottom-right"></span></div>
+      <div class="face bottom"><span class="dot top-left"></span><span class="dot top-right"></span><span class="dot middle-left"></span><span class="dot middle-right"></span><span class="dot bottom-left"></span><span class="dot bottom-right"></span></div>
+    </div>
+  </div>
+
+  <script>
+    function getRotationForFace(face) {
+      switch(face) {
+        case 1: return [0, 0];
+        case 2: return [0, 180];
+        case 3: return [0, -90];
+        case 4: return [0, 90];
+        case 5: return [-90, 0];
+        case 6: return [90, 0];
+      }
+    }
+
+    function rollOneDice(diceId, offsetX) {
+      return new Promise(resolve => {
+        const dice = document.getElementById(diceId);
+        const result = Math.floor(Math.random() * 6) + 1;
+
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const speedFactor = Math.min(vw, vh) / 300;
+
+        let bounceX = (Math.random() > 0.5 ? 1 : -1) * 200 * speedFactor;
+        let bounceY = (Math.random() > 0.5 ? 1 : -1) * 100 * speedFactor;
+
+        const maxX = vw / 2 - 100;
+        const maxY = vh / 2 - 100;
+        if (Math.abs(offsetX + bounceX) > maxX) bounceX *= -1;
+        if (Math.abs(bounceY) > maxY) bounceY *= -1;
+
+        const crazyX = 720 + Math.floor(Math.random() * 720 * speedFactor);
+        const crazyY = 720 + Math.floor(Math.random() * 720 * speedFactor);
+
+        dice.style.transition = 'none';
+        dice.style.transform = `translate(${offsetX}px, 0) rotateX(0deg) rotateY(0deg)`;
+
+        setTimeout(() => {
+          dice.style.transition = 'transform 0.6s cubic-bezier(0.5, -1, 0.5, 2)';
+          dice.style.transform = `translate(${offsetX + bounceX}px, ${bounceY}px) rotateX(${crazyX}deg) rotateY(${crazyY}deg)`;
+
+          setTimeout(() => {
+            const [finalX, finalY] = getRotationForFace(result);
+            dice.style.transition = 'transform 1.2s ease-out';
+            dice.style.transform = `translate(${offsetX + bounceX}px, ${bounceY}px) rotateX(${finalX}deg) rotateY(${finalY}deg)`;
+
+            setTimeout(() => {
+              dice.style.transition = 'transform 1.2s ease-in-out';
+              dice.style.transform = `translate(${offsetX}px, 0) rotateX(${finalX}deg) rotateY(${finalY}deg)`;
+              setTimeout(() => resolve(result), 1200);
+            }, 1500);
+          }, 600);
+        }, 20);
+      });
+    }
+
+    async function rollDice() {
+      const btn = document.getElementById('roll-btn');
+      btn.disabled = true;
+      document.getElementById('result').style.visibility = 'hidden';
+
+      const [r1, r2] = await Promise.all([
+        rollOneDice('dice1', -80),
+        rollOneDice('dice2', 80)
+      ]);
+
+      document.getElementById('result').textContent = `Kết quả: ${r1} + ${r2} = ${r1 + r2}`;
+      document.getElementById('result').style.visibility = 'visible';
+      btn.disabled = false;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('roll-btn').addEventListener('click', rollDice);
+    });
+  </script>
+</body>
+</html>
