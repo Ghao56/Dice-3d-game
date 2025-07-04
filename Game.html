@@ -64,7 +64,7 @@
       position: absolute;
     }
 
-    .center { top: 40%; left: 40%; }
+    .center { top: 50%; left: 50%; transform: translate(-50%, -50%);}
     .top-left { top: 15%; left: 15%; }
     .top-right { top: 15%; right: 15%; }
     .bottom-left { bottom: 15%; left: 15%; }
@@ -79,6 +79,12 @@
       visibility: hidden;
       margin-bottom: 10px;
     }
+    .dice .face.front .dot.center {
+    background-color: red;
+    width: 30px;
+    height: 30px;
+  }
+
   </style>
 </head>
 <body>
@@ -104,78 +110,104 @@
     </div>
   </div>
 
-  <script>
-    function getRotationForFace(face) {
-      switch(face) {
-        case 1: return [0, 0];
-        case 2: return [0, 180];
-        case 3: return [0, -90];
-        case 4: return [0, 90];
-        case 5: return [-90, 0];
-        case 6: return [90, 0];
-      }
-    }
+<script>
+  const DICE_SIZE = 100;
 
-    function rollOneDice(diceId, offsetX) {
-      return new Promise(resolve => {
-        const dice = document.getElementById(diceId);
-        const result = Math.floor(Math.random() * 6) + 1;
+  function getRotationForFaceTop(face) {
+  switch (face) {
+    case 1: return [0, 0];          // front
+    case 2: return [0, 180];        // back
+    case 3: return [0, -90];        // right
+    case 4: return [0, 90];         // left
+    case 5: return [-90, 0];        // top
+    case 6: return [90, 0];         // bottom
+  }
+}
 
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const speedFactor = Math.min(vw, vh) / 300;
+function getRandomBounce(speedFactor) {
+    const bounceX = (Math.random() > 0.5 ? 1 : -1) * 200 * speedFactor;
+    const bounceY = (Math.random() > 0.5 ? 1 : -1) * 100 * speedFactor;
+    return [bounceX, bounceY];
+  }
 
-        let bounceX = (Math.random() > 0.5 ? 1 : -1) * 200 * speedFactor;
-        let bounceY = (Math.random() > 0.5 ? 1 : -1) * 100 * speedFactor;
+  function rollOneDice(diceId, offsetX, bounceX, bounceY, face) {
+  return new Promise(resolve => {
+    const dice = document.getElementById(diceId);
+    const [finalX, finalY] = getRotationForFaceTop(face);
 
-        const maxX = vw / 2 - 100;
-        const maxY = vh / 2 - 100;
-        if (Math.abs(offsetX + bounceX) > maxX) bounceX *= -1;
-        if (Math.abs(bounceY) > maxY) bounceY *= -1;
+    const rotX = 1080 + finalX;
+    const rotY = 1080 + finalY;
 
-        const crazyX = 720 + Math.floor(Math.random() * 720 * speedFactor);
-        const crazyY = 720 + Math.floor(Math.random() * 720 * speedFactor);
+    dice.style.transition = 'none';
+    dice.style.transform = `translate(${offsetX}px, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg)`;
 
-        dice.style.transition = 'none';
-        dice.style.transform = `translate(${offsetX}px, 0) rotateX(0deg) rotateY(0deg)`;
+    requestAnimationFrame(() => {
+      dice.style.transition = 'transform 1.6s cubic-bezier(0.25, 1, 0.5, 1)';
+      dice.style.transform = `
+        translate(${offsetX + bounceX}px, ${bounceY}px)
+        rotateX(${rotX}deg)
+        rotateY(${rotY}deg)
+        rotateZ(0deg)
+      `;
+      setTimeout(() => {
+        dice.style.transition = 'transform 0.6s cubic-bezier(0.5, 1, 0.89, 1)';
+        dice.style.transform = `
+          translate(${offsetX}px, 0px)
+          rotateX(${rotX}deg)
+          rotateY(${rotY}deg)
+          rotateZ(0deg)
+        `;
 
         setTimeout(() => {
-          dice.style.transition = 'transform 0.6s cubic-bezier(0.5, -1, 0.5, 2)';
-          dice.style.transform = `translate(${offsetX + bounceX}px, ${bounceY}px) rotateX(${crazyX}deg) rotateY(${crazyY}deg)`;
+          dice.style.transition = 'none';
+          dice.style.transform = `
+            translate(${offsetX}px, 0px)
+            rotateX(${finalX}deg)
+            rotateY(${finalY}deg)
+            rotateZ(0deg)
+          `;
+          resolve(face);
+        }, 600);
+      }, 1600);
+    });
+  });
+}
+  async function rollDice() {
+  const btn = document.getElementById('roll-btn');
+  btn.disabled = true;
+  document.getElementById('result').style.visibility = 'hidden';
 
-          setTimeout(() => {
-            const [finalX, finalY] = getRotationForFace(result);
-            dice.style.transition = 'transform 1.2s ease-out';
-            dice.style.transform = `translate(${offsetX + bounceX}px, ${bounceY}px) rotateX(${finalX}deg) rotateY(${finalY}deg)`;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const speedFactor = Math.min(vw, vh) / 300;
 
-            setTimeout(() => {
-              dice.style.transition = 'transform 1.2s ease-in-out';
-              dice.style.transform = `translate(${offsetX}px, 0) rotateX(${finalX}deg) rotateY(${finalY}deg)`;
-              setTimeout(() => resolve(result), 1200);
-            }, 1500);
-          }, 600);
-        }, 20);
-      });
-    }
+  let [bx1, by1] = getRandomBounce(speedFactor);
+  let [bx2, by2] = getRandomBounce(speedFactor);
 
-    async function rollDice() {
-      const btn = document.getElementById('roll-btn');
-      btn.disabled = true;
-      document.getElementById('result').style.visibility = 'hidden';
+  const newX1 = -80 + bx1;
+  const newX2 = 80 + bx2;
 
-      const [r1, r2] = await Promise.all([
-        rollOneDice('dice1', -80),
-        rollOneDice('dice2', 80)
-      ]);
+  if (Math.abs(newX1 - newX2) < DICE_SIZE) {
+    [bx1, bx2] = [-bx1 * 1.2, -bx2 * 1.2];
+    [by1, by2] = [by1 * 1.2, by2 * 1.2];
+  }
 
-      document.getElementById('result').textContent = `Kết quả: ${r1} + ${r2} = ${r1 + r2}`;
-      document.getElementById('result').style.visibility = 'visible';
-      btn.disabled = false;
-    }
+  const face1 = Math.floor(Math.random() * 6) + 1;
+  const face2 = Math.floor(Math.random() * 6) + 1;
 
-    document.addEventListener('DOMContentLoaded', () => {
+  const [r1, r2] = await Promise.all([
+    rollOneDice('dice1', -80, bx1, by1, face1),
+    rollOneDice('dice2', 80, bx2, by2, face2)
+  ]);
+
+  document.getElementById('result').textContent = `Kết quả: ${r1} + ${r2} = ${r1 + r2}`;
+  document.getElementById('result').style.visibility = 'visible';
+  btn.disabled = false;
+}
+
+  document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('roll-btn').addEventListener('click', rollDice);
     });
-  </script>
+</script>
 </body>
 </html>
